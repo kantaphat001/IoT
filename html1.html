@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COSMOS — Space Command Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        /* ═══════════════════════════════════════════
+           SPACE THEME — CSS VARIABLES
+        ═══════════════════════════════════════════ */
+        :root {
+            --space-void: #020210;
+            --space-deep: #070720;
+            --nebula-blue: #3a7bff;
+            --nebula-cyan: #00e5ff;
+            --nebula-purple: #a855f7;
+            --nebula-pink: #ec4899;
+            --star-white: #e2e8f0;
+            --star-dim: #475569;
+            --success: #22d97a;
+            --danger: #ff4d6a;
+            --amber: #f59e0b;
+            --glass: rgba(8, 10, 30, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--space-void);
+            color: var(--star-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ═══ STARFIELD CANVAS ═══ */
+        #starfield {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ═══ NEBULA GLOW (ลอยเคลื่อนไหว) ═══ */
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(100px);
+            animation: nebulaDrift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 {
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(58, 123, 255, 0.2) 0%, transparent 70%);
+            top: -15%; left: -10%;
+        }
+        .nebula-2 {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%);
+            bottom: -20%; right: -15%;
+            animation-delay: -8s;
+        }
+        .nebula-3 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.12) 0%, transparent 70%);
+            top: 50%; left: 40%;
+            animation-delay: -16s;
+        }
+        @keyframes nebulaDrift {
+            0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33%  { transform: translate(40px, -30px) scale(1.15) rotate(5deg); }
+            66%  { transform: translate(-20px, 20px) scale(0.9) rotate(-3deg); }
+            100% { transform: translate(30px, 10px) scale(1.05) rotate(2deg); }
+        }
+
+        /* ═══ SHOOTING STAR ═══ */
+        .shooting-star {
+            position: fixed;
+            width: 120px; height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+            border-radius: 50px;
+            z-index: 1;
+            opacity: 0;
+            pointer-events: none;
+            animation: shoot 3s ease-out infinite;
+        }
+        .shooting-star:nth-child(1) { top: 12%; left: 60%; animation-delay: 0s; }
+        .shooting-star:nth-child(2) { top: 35%; left: 20%; animation-delay: 4s; width: 80px; }
+        .shooting-star:nth-child(3) { top: 65%; left: 75%; animation-delay: 8s; width: 100px; }
+        @keyframes shoot {
+            0%   { transform: translateX(0) translateY(0) rotate(-35deg); opacity: 0; }
+            5%   { opacity: 1; }
+            30%  { opacity: 0.6; }
+            100% { transform: translateX(-600px) translateY(300px) rotate(-35deg); opacity: 0; }
+        }
+
+        /* ═══ HEADINGS ═══ */
+        h1, h2, h3 { font-family: 'Orbitron', sans-serif; letter-spacing: 2px; }
+
+        /* ═══════════════════════════════════════════
+           LOGIN SCREEN
+        ═══════════════════════════════════════════ */
+        #login-screen {
+            position: relative; z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 50px 45px; width: 440px; text-align: center;
+            background: var(--glass);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+            animation: panelFloat 6s ease-in-out infinite;
+        }
+        @keyframes panelFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* เส้นเรืองแสงบนล่าง */
+        #login-screen::before {
+            content: '';
+            position: absolute; top: 0; left: 30px; right: 30px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--nebula-cyan), var(--nebula-purple), transparent);
+        }
+        #login-screen::after {
+            content: '';
+            position: absolute; bottom: 0; left: 30px; right: 30px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--nebula-pink), var(--nebula-blue), transparent);
+            opacity: 0.5;
+        }
+
+        .login-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px; font-weight: 900;
+            background: linear-gradient(135deg, var(--nebula-cyan), var(--nebula-purple), var(--nebula-pink));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+            animation: logoGlow 4s ease-in-out infinite alternate;
+        }
+        @keyframes logoGlow {
+            0% { filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.4)); }
+            100% { filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.6)); }
+        }
+
+        .sys-msg {
+            font-size: 12px; color: var(--star-dim);
+            font-family: 'Share Tech Mono', monospace;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        input.space-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 3px solid var(--nebula-cyan);
+            color: #fff; padding: 14px 16px;
+            margin: 8px 0; width: 100%;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px; outline: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        input.space-input:focus {
+            border-color: var(--nebula-cyan);
+            background: rgba(0, 229, 255, 0.04);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+        }
+        input.space-input::placeholder { color: var(--star-dim); }
+
+        .btn-launch {
+            width: 100%; margin-top: 25px; padding: 16px;
+            background: linear-gradient(135deg, var(--nebula-blue), var(--nebula-purple));
+            color: #fff; border: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px; font-weight: 700;
+            letter-spacing: 2px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-launch::before {
+            content: '';
+            position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.5s;
+        }
+        .btn-launch:hover::before { left: 100%; }
+        .btn-launch:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 35px rgba(58, 123, 255, 0.4);
+        }
+
+        /* ═══════════════════════════════════════════
+           DASHBOARD SCREEN
+        ═══════════════════════════════════════════ */
+        #dashboard-screen {
+            display: none; position: relative; z-index: 10;
+            width: 95%; max-width: 1200px;
+            padding: 40px; margin: 30px 0;
+            background: var(--glass);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+        }
+
+        /* Header */
+        .dash-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 35px; padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
+        }
+        .dash-header::after {
+            content: '';
+            position: absolute; bottom: -1px; left: 0;
+            width: 200px; height: 2px;
+            background: linear-gradient(90deg, var(--nebula-cyan), transparent);
+        }
+        .header-title h1 {
+            font-size: 26px;
+            background: linear-gradient(135deg, #fff, var(--nebula-cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-title p {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px; color: var(--star-dim);
+            margin-top: 4px; letter-spacing: 1px;
+        }
+
+        .status-badge {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(34, 217, 122, 0.08);
+            border: 1px solid rgba(34, 217, 122, 0.25);
+            padding: 8px 18px; border-radius: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px; color: var(--success);
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            background: var(--success); border-radius: 50%;
+            animation: dotPulse 2s infinite;
+        }
+        @keyframes dotPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(34, 217, 122, 0.5); }
+            70%  { box-shadow: 0 0 0 8px rgba(34, 217, 122, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 217, 122, 0); }
+        }
+
+        /* ═══ GRID ═══ */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        /* ═══ WIDGET CARDS ═══ */
+        .widget {
+            background: rgba(5, 8, 20, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 28px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: space-between;
+            min-height: 260px;
+            position: relative; overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            /* Animation on load */
+            opacity: 0; transform: translateY(40px);
+            animation: cardSlideIn 0.7s ease forwards;
+        }
+        .widget:nth-child(1) { animation-delay: 0.1s; }
+        .widget:nth-child(2) { animation-delay: 0.2s; }
+        .widget:nth-child(3) { animation-delay: 0.3s; }
+        .widget:nth-child(4) { animation-delay: 0.4s; }
+        .widget:nth-child(5) { animation-delay: 0.5s; }
+        @keyframes cardSlideIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* เส้นไล่สีด้านบนของแต่ละการ์ด */
+        .widget::before {
+            content: '';
+            position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--nebula-blue), transparent);
+            opacity: 0.4;
+        }
+        .widget:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-6px);
+            box-shadow: 0 25px 60px rgba(58, 123, 255, 0.08);
+        }
+
+        .widget-header {
+            width: 100%; display: flex;
+            justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .widget-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px; color: var(--star-dim);
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        .widget-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 16px; color: #fff;
+        }
+        .widget-code {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px; color: #333; margin-top: auto;
+            letter-spacing: 1px;
+        }
+
+        /* ═══════════════════════════════════════════
+           V0: POWER BUTTON (วงแหวนเรืองแสง + Pulse)
+        ═══════════════════════════════════════════ */
+        .widget-v0 .widget-icon { background: linear-gradient(135deg, var(--danger), #ff8e53); }
+        .power-zone { position: relative; }
+        .power-btn {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 40%, #1a0a12, #0a0308);
+            border: 3px solid var(--danger);
+            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            z-index: 2;
+        }
+        .power-btn:hover { transform: scale(1.08); }
+        .power-btn .power-icon {
+            font-family: 'Orbitron'; font-style: normal;
+            font-size: 18px; font-weight: 900;
+            color: var(--danger); transition: 0.3s;
+        }
+
+        /* วงแหวน Pulse ล้อมปุ่ม */
+        .pulse-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            border: 2px solid var(--danger);
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0;
+            animation: pulseOut 2s ease-out infinite;
+            z-index: 1;
+        }
+        .pulse-ring:nth-child(2) { animation-delay: 0.7s; }
+        @keyframes pulseOut {
+            0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+        }
+
+        /* Active state */
+        .power-btn.active {
+            border-color: var(--success);
+            background: radial-gradient(circle at 40% 40%, #0a1a10, #030a06);
+            box-shadow: 0 0 30px rgba(34, 217, 122, 0.3);
+        }
+        .power-btn.active .power-icon {
+            color: var(--success);
+            text-shadow: 0 0 15px var(--success);
+        }
+        .power-btn.active ~ .pulse-ring {
+            border-color: var(--success);
+        }
+
+        /* ═══════════════════════════════════════════
+           V1: NEURAL NODE (หกเหลี่ยม + Orbit Ring)
+        ═══════════════════════════════════════════ */
+        .widget-v1 .widget-icon { background: linear-gradient(135deg, var(--nebula-purple), var(--nebula-pink)); }
+        .node-zone { position: relative; width: 120px; height: 120px; }
+        .hex-node {
+            width: 100px; height: 110px;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 5, 25, 0.9);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 2;
+        }
+        .hex-node:hover { transform: translate(-50%, -50%) scale(1.08); }
+        .hex-node .inner-core {
+            width: 58px; height: 66px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: #111; display: flex; justify-content: center; align-items: center;
+            font-family: 'Share Tech Mono'; font-size: 12px; color: #555;
+            transition: 0.4s; letter-spacing: 1px;
+        }
+
+        /* วงแหวนโคจรรอบ Hex */
+        .orbit-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 120px; height: 120px;
+            border: 1px dashed rgba(168, 85, 247, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            animation: orbitSlow 12s linear infinite;
+        }
+        .orbit-dot {
+            position: absolute; top: -4px; left: 50%;
+            width: 8px; height: 8px;
+            background: var(--nebula-purple);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px var(--nebula-purple);
+            opacity: 0.3;
+        }
+        @keyframes orbitSlow {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Active */
+        .hex-node.on {
+            background: var(--nebula-purple);
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.5);
+        }
+        .hex-node.on .inner-core {
+            background: var(--nebula-pink); color: #fff;
+            text-shadow: 0 0 8px #fff;
+        }
+        .hex-node.on ~ .orbit-ring {
+            border-color: rgba(168, 85, 247, 0.5);
+            animation-duration: 4s;
+        }
+        .hex-node.on ~ .orbit-ring .orbit-dot {
+            opacity: 1;
+            box-shadow: 0 0 15px var(--nebula-purple), 0 0 30px var(--nebula-purple);
+        }
+
+        /* ═══════════════════════════════════════════
+           V2: LUMINANCE SLIDER (เส้นรุ้งจักรวาล)
+        ═══════════════════════════════════════════ */
+        .widget-v2 .widget-icon { background: linear-gradient(135deg, var(--nebula-cyan), #38bdf8); }
+        .slider-zone { width: 100%; text-align: center; }
+        .slider-val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px; font-weight: 900;
+            background: linear-gradient(135deg, var(--nebula-cyan), #38bdf8, var(--nebula-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+        .slider-label {
+            font-family: 'Share Tech Mono'; font-size: 11px;
+            color: var(--star-dim); margin: 6px 0 20px; letter-spacing: 2px;
+        }
+
+        input[type=range].cosmic-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 6px;
+            background: linear-gradient(90deg, #0a1628, var(--nebula-cyan), var(--nebula-purple));
+            border-radius: 3px; outline: none;
+        }
+        input[type=range].cosmic-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 22px; height: 22px;
+            background: #fff; border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--nebula-cyan), 0 0 30px rgba(0, 229, 255, 0.3);
+            transition: 0.2s;
+        }
+        input[type=range].cosmic-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        .slider-range-labels {
+            display: flex; justify-content: space-between;
+            margin-top: 10px; font-size: 10px; color: #333;
+            font-family: 'Share Tech Mono';
+        }
+
+        /* ═══════════════════════════════════════════
+           V3: THERMAL GAUGE (วงแหวนดาวเคราะห์ + Rotating Ring)
+        ═══════════════════════════════════════════ */
+        .widget-v3 .widget-icon { background: linear-gradient(135deg, var(--amber), #ff8a00); }
+        .gauge-zone { position: relative; width: 140px; height: 140px; }
+        .gauge-ring {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(var(--gauge-color, var(--success)) var(--perc, 0%), rgba(20, 25, 45, 0.8) 0);
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.4s ease;
+            position: relative;
+            z-index: 2;
+        }
+        .gauge-core {
+            width: 108px; height: 108px;
+            background: radial-gradient(circle at 40% 40%, #0d0d18, #050510);
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .gauge-temp {
+            font-family: 'Orbitron'; font-size: 28px; font-weight: 700;
+            color: var(--gauge-color, var(--success));
+            text-shadow: 0 0 10px var(--gauge-color, var(--success));
+            transition: 0.3s;
+        }
+        .gauge-unit {
+            font-family: 'Share Tech Mono'; font-size: 10px;
+            color: var(--star-dim); margin-top: 2px;
+        }
+
+        /* วงแหวนหมุนนอก Gauge */
+        .gauge-orbit {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 150px; height: 150px;
+            border: 1px dashed rgba(245, 158, 11, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: orbitSlow 15s linear infinite reverse;
+            z-index: 1;
+        }
+        .gauge-orbit .orbit-particle {
+            position: absolute; top: -3px; left: 50%;
+            width: 6px; height: 6px;
+            background: var(--amber);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 8px var(--amber);
+            opacity: 0.4;
+        }
+
+        input[type=range].thermal-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 4px;
+            background: linear-gradient(90deg, #111, var(--amber));
+            border-radius: 2px; outline: none; margin-top: 20px;
+        }
+        input[type=range].thermal-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: var(--amber);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--amber);
+        }
+
+        /* ═══════════════════════════════════════════
+           V4: COSMIC TERMINAL (เต็มความกว้าง)
+        ═══════════════════════════════════════════ */
+        .widget-v4 { grid-column: 1 / -1; min-height: 200px; }
+        .widget-v4 .widget-icon { background: linear-gradient(135deg, var(--success), #10b981); }
+
+        .terminal-screen {
+            width: 100%;
+            background: rgba(2, 5, 12, 0.9);
+            border: 1px solid rgba(34, 217, 122, 0.12);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            color: var(--success);
+            min-height: 60px;
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        /* เส้นสแกนวิ่ง */
+        .terminal-screen::after {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(34, 217, 122, 0.3), transparent);
+            animation: scanLine 3s linear infinite;
+        }
+        @keyframes scanLine {
+            0%   { top: 0; }
+            100% { top: 100%; }
+        }
+        .term-prompt { color: var(--nebula-cyan); font-weight: 700; }
+        .term-cursor {
+            display: inline-block; width: 9px; height: 16px;
+            background: var(--success); vertical-align: middle; margin-left: 4px;
+            animation: cursorBlink 1s step-end infinite;
+        }
+        @keyframes cursorBlink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .cmd-row { display: flex; width: 100%; gap: 12px; }
+        .cmd-row input {
+            flex: 1; padding: 14px 18px;
+            background: rgba(5, 10, 20, 0.8);
+            border: 1px solid rgba(34, 217, 122, 0.15);
+            border-radius: 12px;
+            color: #fff; font-family: 'Share Tech Mono'; font-size: 13px;
+            outline: none; transition: 0.3s;
+        }
+        .cmd-row input:focus {
+            border-color: var(--success);
+            box-shadow: 0 0 15px rgba(34, 217, 122, 0.1);
+        }
+        .cmd-row input::placeholder { color: #333; }
+        .btn-transmit {
+            padding: 0 30px;
+            background: linear-gradient(135deg, var(--nebula-blue), var(--nebula-purple));
+            color: #fff; border: none;
+            border-radius: 12px;
+            font-family: 'Orbitron'; font-weight: 700; font-size: 12px;
+            letter-spacing: 1px; cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-transmit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(58, 123, 255, 0.35);
+        }
+
+        /* ═══ RESPONSIVE ═══ */
+        @media (max-width: 800px) {
+            .grid-container { grid-template-columns: 1fr; }
+            .dash-header { flex-direction: column; gap: 15px; align-items: flex-start; }
+            #dashboard-screen { padding: 25px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ BACKGROUND EFFECTS ═══ -->
+    <canvas id="starfield"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+
+    <!-- ═══════════════════════════════════════════
+         LOGIN SCREEN
+    ═══════════════════════════════════════════ -->
+    <div id="login-screen">
+        <div class="login-logo">COSMOS</div>
+        <div class="sys-msg">AUTHORIZATION REQUIRED // SPACE COMMAND PROTOCOL v3.2</div>
+        <input type="text" id="user" class="space-input" placeholder="[ CALLSIGN ]">
+        <input type="password" id="pass" class="space-input" placeholder="[ ACCESS CODE ]">
+        <button class="btn-launch" onclick="login()">LAUNCH SESSION</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         DASHBOARD SCREEN
+    ═══════════════════════════════════════════ -->
+    <div id="dashboard-screen">
+        <div class="dash-header">
+            <div class="header-title">
+                <h1>MISSION CONTROL</h1>
+                <p>REAL-TIME TELEMETRY // ALL SYSTEMS NOMINAL</p>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                UPLINK ACTIVE
+            </div>
+        </div>
+
+        <div class="grid-container">
+
+            <!-- ═══ V0: POWER ═══ -->
+            <div class="widget widget-v0">
+                <div class="widget-header">
+                    <span class="widget-title">Main Power · V0</span>
+                    <div class="widget-icon">⚡</div>
+                </div>
+                <div class="power-zone">
+                    <div id="btn-v0" class="power-btn" onclick="toggleV0()">
+                        <i class="power-icon" id="v0-text">OFF</i>
+                    </div>
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                </div>
+                <div class="widget-code">PWR_OVERRIDE_R1</div>
+            </div>
+
+            <!-- ═══ V1: NEURAL NODE ═══ -->
+            <div class="widget widget-v1">
+                <div class="widget-header">
+                    <span class="widget-title">Neural Node · V1</span>
+                    <div class="widget-icon">🔮</div>
+                </div>
+                <div class="node-zone">
+                    <div id="node-v1" class="hex-node" onclick="toggleV1()">
+                        <div class="inner-core" id="node-text">IDLE</div>
+                    </div>
+                    <div class="orbit-ring">
+                        <div class="orbit-dot"></div>
+                    </div>
+                </div>
+                <div class="widget-code">DAT_LINK_ACTIVE</div>
+            </div>
+
+            <!-- ═══ V2: LUMINANCE ═══ -->
+            <div class="widget widget-v2">
+                <div class="widget-header">
+                    <span class="widget-title">Luminance · V2</span>
+                    <div class="widget-icon">💡</div>
+                </div>
+                <div class="slider-zone">
+                    <div class="slider-val" id="slider-v2-val">0</div>
+                    <div class="slider-label">PHOTON OUTPUT LEVEL</div>
+                    <input type="range" id="slider-v2" class="cosmic-slider"
+                        min="0" max="255" value="0"
+                        oninput="updateSliderV2Display(this.value)"
+                        onchange="sendSliderV2(this.value)">
+                    <div class="slider-range-labels">
+                        <span>0</span><span>128</span><span>255</span>
+                    </div>
+                </div>
+                <div class="widget-code">LUM_CTRL_V2</div>
+            </div>
+
+            <!-- ═══ V3: THERMAL GAUGE ═══ -->
+            <div class="widget widget-v3">
+                <div class="widget-header">
+                    <span class="widget-title">Thermal Gauge · V3</span>
+                    <div class="widget-icon">🌡️</div>
+                </div>
+                <div class="gauge-zone">
+                    <div class="gauge-ring" id="gauge-v3" style="--perc: 0%; --gauge-color: #22d97a;">
+                        <div class="gauge-core">
+                            <div class="gauge-temp" id="gauge-val">0°</div>
+                            <div class="gauge-unit">CELSIUS</div>
+                        </div>
+                    </div>
+                    <div class="gauge-orbit">
+                        <div class="orbit-particle"></div>
+                    </div>
+                </div>
+                <input type="range" id="input-v3" class="thermal-slider"
+                    min="0" max="100" value="0"
+                    oninput="updateGaugeV3(this.value)">
+                <div class="widget-code">THERM_SENS_V3</div>
+            </div>
+
+            <!-- ═══ V4: TERMINAL ═══ -->
+            <div class="widget widget-v4">
+                <div class="widget-header">
+                    <span class="widget-title">Command Terminal · V4</span>
+                    <div class="widget-icon">📡</div>
+                </div>
+                <div class="terminal-screen">
+                    <span class="term-prompt">COSMOS://&gt;</span>
+                    <span id="label-v4">AWAITING_TRANSMISSION...</span>
+                    <span class="term-cursor"></span>
+                </div>
+                <div class="cmd-row">
+                    <input type="text" id="input-v4"
+                        placeholder="Enter payload data..."
+                        onkeydown="if(event.key === 'Enter') sendTerminalV4()">
+                    <button class="btn-transmit" onclick="sendTerminalV4()">TRANSMIT</button>
+                </div>
+                <div class="widget-code">COMM_RELAY_V4</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /* ═══════════════════════════════════════════
+           ANIMATED STARFIELD (Canvas)
+        ═══════════════════════════════════════════ */
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        const STAR_COUNT = 220;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // สร้างดาว
+        for (let i = 0; i < STAR_COUNT; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2 + 0.5,
+                speed: Math.random() * 0.3 + 0.05,
+                opacity: Math.random() * 0.7 + 0.3,
+                twinkleSpeed: Math.random() * 0.02 + 0.005,
+                twinkleDir: Math.random() > 0.5 ? 1 : -1
+            });
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                // กระพริบ
+                star.opacity += star.twinkleSpeed * star.twinkleDir;
+                if (star.opacity > 1) { star.opacity = 1; star.twinkleDir = -1; }
+                if (star.opacity < 0.2) { star.opacity = 0.2; star.twinkleDir = 1; }
+
+                // เคลื่อนที่ช้าๆ
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(200, 210, 255, ${star.opacity})`;
+                ctx.fill();
+
+                // เรืองแสงสำหรับดาวใหญ่
+                if (star.size > 1.5) {
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size * 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(200, 210, 255, ${star.opacity * 0.15})`;
+                    ctx.fill();
+                }
+            });
+            requestAnimationFrame(drawStars);
+        }
+        drawStars();
+
+        /* ═══════════════════════════════════════════
+           PARALLAX เมาส์ (เนบิวลาขยับตามเมาส์)
+        ═══════════════════════════════════════════ */
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 2;
+            const y = (e.clientY / window.innerHeight - 0.5) * 2;
+            document.querySelectorAll('.nebula').forEach((n, i) => {
+                const factor = (i + 1) * 8;
+                n.style.transform = `translate(${x * factor}px, ${y * factor}px)`;
+            });
+        });
+
+        /* ═══════════════════════════════════════════
+           BLYNK API
+        ═══════════════════════════════════════════ */
+        const TOKEN = "Bm85sp5KvHD6RCq5Sjoets3-XsG33SYQ";
+        const BLYNK_URL = "https://blynk.cloud/external/api";
+
+        let v0State = 0;
+        let v1State = 0;
+
+        function login() {
+            const user = document.getElementById("user").value;
+            const pass = document.getElementById("pass").value;
+            if (user !== "" && pass !== "") {
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("dashboard-screen").style.display = "block";
+            } else {
+                alert("ERROR: CALLSIGN AND ACCESS CODE REQUIRED.");
+            }
+        }
+
+        function writeBlynk(pin, value) {
+            const url = `${BLYNK_URL}/update?token=${TOKEN}&${pin}=${encodeURIComponent(value)}`;
+            fetch(url).then(res => {
+                if (res.ok) console.log(`[COSMOS] ${pin} -> ${value}`);
+            }).catch(err => console.error("[COSMOS] ERR:", err));
+        }
+
+        /* ═══ V0: Power Toggle ═══ */
+        function toggleV0() {
+            v0State = v0State === 0 ? 1 : 0;
+            const btn = document.getElementById("btn-v0");
+            const text = document.getElementById("v0-text");
+            if (v0State === 1) {
+                btn.classList.add("active");
+                text.innerText = "ON";
+            } else {
+                btn.classList.remove("active");
+                text.innerText = "OFF";
+            }
+            writeBlynk("V0", v0State);
+        }
+
+        /* ═══ V1: Neural Node ═══ */
+        function toggleV1() {
+            v1State = v1State === 0 ? 1 : 0;
+            const node = document.getElementById("node-v1");
+            const text = document.getElementById("node-text");
+            if (v1State === 1) {
+                node.classList.add("on");
+                text.innerText = "ACTV";
+            } else {
+                node.classList.remove("on");
+                text.innerText = "IDLE";
+            }
+            writeBlynk("V1", v1State);
+        }
+
+        /* ═══ V2: Slider ═══ */
+        function updateSliderV2Display(val) {
+            document.getElementById("slider-v2-val").innerText = val;
+        }
+        function sendSliderV2(val) {
+            writeBlynk("V2", val);
+        }
+
+        /* ═══ V3: Gauge (Dynamic Color) ═══ */
+        function updateGaugeV3(val) {
+            const temp = parseFloat(val);
+            const perc = (temp / 100) * 100;
+            const hue = 140 - (temp * 1.4);
+            const clampedHue = Math.max(0, Math.min(140, hue));
+            const color = `hsl(${clampedHue}, 100%, 50%)`;
+
+            const gauge = document.getElementById("gauge-v3");
+            gauge.style.setProperty('--perc', `${perc}%`);
+            gauge.style.setProperty('--gauge-color', color);
+
+            const valEl = document.getElementById("gauge-val");
+            valEl.innerText = `${temp}°`;
+            valEl.style.color = color;
+            valEl.style.textShadow = `0 0 10px ${color}`;
+
+            writeBlynk("V3", val);
+        }
+
+        /* ═══ V4: Terminal ═══ */
+        function sendTerminalV4() {
+            const inputEl = document.getElementById("input-v4");
+            const textStr = inputEl.value.trim();
+            if (textStr !== "") {
+                document.getElementById("label-v4").innerText = textStr;
+                writeBlynk("V4", textStr);
+                inputEl.value = "";
+            }
+        }
+    </script>
+</body>
+</html>
