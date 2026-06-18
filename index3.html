@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Smart Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
+        
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            background-color: #F7F7F9; /* สีพื้นหลังสไตล์มินิมอล สบายตา */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Glassmorphism Header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Card Styles & Animations */
+        .device-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        /* สไตล์เมื่ออุปกรณ์ "เปิด" */
+        .device-card.active {
+            background-color: #ffffff;
+            border-color: #e5e7eb;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+        }
+        
+        /* สไตล์เมื่ออุปกรณ์ "ปิด" */
+        .device-card.inactive {
+            background-color: #f3f4f6;
+            border-color: transparent;
+            color: #9ca3af;
+        }
+
+        .icon-wrapper {
+            transition: all 0.3s ease;
+        }
+        .active .icon-wrapper.light { background-color: #FEF3C7; color: #F59E0B; } /* สีไฟเปิด (เหลือง) */
+        .inactive .icon-wrapper { background-color: #e5e7eb; color: #9ca3af; }
+
+        /* สไตล์ปุ่มฟังก์ชันย่อย (Sub-devices) */
+        .sub-device-btn {
+            transition: all 0.2s ease;
+        }
+        .sub-device-btn.active {
+            background-color: #1E293B; /* Slate 800 */
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .sub-device-btn.inactive {
+            background-color: #F1F5F9;
+            color: #64748B;
+        }
+        
+        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <header class="glass-header sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-5 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-semibold text-slate-800">My Home</h1>
+                <p id="date-display" class="text-xs text-slate-500 mt-0.5 font-light"></p>
+            </div>
+            
+            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden shadow-sm">
+                <i class="fa-solid fa-user text-slate-400"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-5xl mx-auto w-full px-5 py-6 space-y-8">
+        
+        <section>
+            <h2 class="text-sm font-medium text-slate-500 mb-3 uppercase tracking-wider">Quick Actions</h2>
+            <div class="flex gap-4 overflow-x-auto hide-scroll pb-2">
+                <button onclick="setAllLights(1)" class="flex-shrink-0 flex items-center gap-3 bg-white border border-slate-200 px-5 py-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-95">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center"><i class="fa-solid fa-sun"></i></div>
+                    <span class="font-medium text-sm">เปิดไฟทั้งหมด</span>
+                </button>
+                <button onclick="setAllLights(0)" class="flex-shrink-0 flex items-center gap-3 bg-white border border-slate-200 px-5 py-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-95">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><i class="fa-solid fa-moon"></i></div>
+                    <span class="font-medium text-sm">ปิดไฟทั้งหมด</span>
+                </button>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-sm font-medium text-slate-500 mb-3 uppercase tracking-wider">Rooms & Devices</h2>
+            <div id="rooms-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                </div>
+        </section>
+
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCY9c0cyUdjeZgAex7Si0DyXGAMZ_MY0OQ",
+            authDomain: "iot1-6c032.firebaseapp.com",
+            projectId: "iot1-6c032",
+            storageBucket: "iot1-6c032.firebasestorage.app",
+            messagingSenderId: "722774557899",
+            appId: "1:722774557899:web:9595d70c69fb5cd62dc74e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // โครงสร้างข้อมูลห้อง และฟังก์ชันเสริม (Field ใหม่จะถูกสร้างใน Firebase อัตโนมัติ)
+        const rooms = [
+            { 
+                id: "doc1", name: "ห้องนอน", icon: "fa-bed", 
+                subDevices: [
+                    { id: "ac", name: "แอร์", icon: "fa-snowflake" },
+                    { id: "curtain", name: "ม่านไฟฟ้า", icon: "fa-person-shelter" }
+                ] 
+            },
+            { 
+                id: "doc2", name: "ห้องน้ำ", icon: "fa-bath", 
+                subDevices: [
+                    { id: "exhaust_fan", name: "พัดลมดูดอากาศ", icon: "fa-fan" },
+                    { id: "heater", name: "เครื่องทำน้ำอุ่น", icon: "fa-temperature-half" }
+                ] 
+            },
+            { 
+                id: "doc3", name: "ห้องรับแขก", icon: "fa-couch", 
+                subDevices: [
+                    { id: "tv", name: "สมาร์ททีวี", icon: "fa-tv" },
+                    { id: "air_purifier", name: "เครื่องฟอกอากาศ", icon: "fa-wind" }
+                ] 
+            },
+            { 
+                id: "doc4", name: "ห้องครัว", icon: "fa-kitchen-set", 
+                subDevices: [
+                    { id: "hood", name: "เครื่องดูดควัน", icon: "fa-fire-burner" }
+                ] 
+            },
+            { 
+                id: "doc5", name: "หน้าบ้าน", icon: "fa-door-open", 
+                subDevices: [
+                    { id: "garage", name: "ประตูโรงรถ", icon: "fa-car" },
+                    { id: "cctv", name: "กล้องวงจรปิด", icon: "fa-video" }
+                ] 
+            }
+        ];
+
+        const container = document.getElementById('rooms-container');
+
+        // แสดงวันที่ปัจจุบัน
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('date-display').innerText = new Date().toLocaleDateString('th-TH', options);
+
+        function renderRooms() {
+            rooms.forEach(room => {
+                // สร้างคอนเทนเนอร์ของการ์ดแต่ละห้อง
+                const roomWrapper = document.createElement('div');
+                roomWrapper.className = "flex flex-col gap-3";
+
+                // 1. การ์ดหลัก (Main Light - led2)
+                const mainCard = document.createElement('div');
+                mainCard.id = `card-${room.id}`;
+                mainCard.className = "device-card inactive rounded-3xl p-5 border flex justify-between items-center relative overflow-hidden";
+                
+                mainCard.innerHTML = `
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div class="icon-wrapper light w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid ${room.icon}"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-medium text-slate-800">${room.name}</h3>
+                            <p id="status-${room.id}" class="text-xs mt-0.5">สถานะ: รอโหลดข้อมูล</p>
+                        </div>
+                    </div>
+                    <div id="btn-${room.id}" class="w-8 h-8 rounded-full border-2 border-slate-300 flex items-center justify-center relative z-10 transition-colors">
+                        <i class="fa-solid fa-power-off text-xs"></i>
+                    </div>
+                `;
+                
+                // 2. ส่วนฟังก์ชันย่อย (Sub Devices)
+                const subDevicesContainer = document.createElement('div');
+                subDevicesContainer.className = "flex gap-2 flex-wrap pl-2";
+                
+                let subDevicesHTML = '';
+                room.subDevices.forEach(sub => {
+                    subDevicesHTML += `
+                        <button id="btn-${room.id}-${sub.id}" onclick="toggleSubDevice('${room.id}', '${sub.id}')" 
+                            class="sub-device-btn inactive px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 active:scale-95">
+                            <i class="fa-solid ${sub.icon}"></i>
+                            ${sub.name}
+                        </button>
+                    `;
+                });
+                subDevicesContainer.innerHTML = subDevicesHTML;
+
+                roomWrapper.appendChild(mainCard);
+                roomWrapper.appendChild(subDevicesContainer);
+                container.appendChild(roomWrapper);
+
+                // --- Real-time Listener ---
+                const docRef = doc(db, "IoT2", room.id);
+                
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        // อัปเดต Main Light (led2)
+                        const isLedOn = data.led2 === 1;
+                        const cardElement = document.getElementById(`card-${room.id}`);
+                        const statusElement = document.getElementById(`status-${room.id}`);
+                        const btnElement = document.getElementById(`btn-${room.id}`);
+                        
+                        if (isLedOn) {
+                            cardElement.classList.replace('inactive', 'active');
+                            statusElement.textContent = "ไฟเปิดอยู่";
+                            statusElement.className = "text-xs mt-0.5 text-amber-500 font-medium";
+                            btnElement.className = "w-8 h-8 rounded-full bg-amber-500 text-white shadow-md flex items-center justify-center relative z-10 transition-colors";
+                        } else {
+                            cardElement.classList.replace('active', 'inactive');
+                            statusElement.textContent = "ปิดไฟ";
+                            statusElement.className = "text-xs mt-0.5 text-slate-400";
+                            btnElement.className = "w-8 h-8 rounded-full border-2 border-slate-300 text-slate-300 flex items-center justify-center relative z-10 transition-colors";
+                        }
+
+                        // อัปเดต Sub Devices
+                        room.subDevices.forEach(sub => {
+                            const subValue = data[sub.id] || 0; // ถ้ายังไม่มีฟิลด์นี้ ให้มองเป็น 0
+                            const subBtn = document.getElementById(`btn-${room.id}-${sub.id}`);
+                            if (subValue === 1) {
+                                subBtn.classList.replace('inactive', 'active');
+                            } else {
+                                subBtn.classList.replace('active', 'inactive');
+                            }
+                        });
+
+                    } else {
+                        // สร้าง Document ใหม่ถ้ายังไม่มี
+                        setDoc(docRef, { led2: 0 }, { merge: true });
+                    }
+                });
+
+                // --- Event Listener ควบคุม Main Light ---
+                mainCard.addEventListener('click', async () => {
+                    const isCurrentlyOn = mainCard.classList.contains('active');
+                    const newValue = isCurrentlyOn ? 0 : 1;
+                    
+                    // เพิ่ม Haptic feedback อ่อนๆ จำลองความรู้สึกเวลากดแอป
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    
+                    await setDoc(docRef, { led2: newValue }, { merge: true });
+                });
+            });
+        }
+
+        renderRooms();
+
+        // --- ฟังก์ชัน Global สำหรับ HTML เรียกใช้ ---
+        
+        // ควบคุม Sub-device แยกย่อย
+        window.toggleSubDevice = async function(roomId, subId) {
+            if (navigator.vibrate) navigator.vibrate(30);
+            
+            const btn = document.getElementById(`btn-${roomId}-${subId}`);
+            const isCurrentlyOn = btn.classList.contains('active');
+            const newValue = isCurrentlyOn ? 0 : 1;
+            
+            // อัปเดตไปยัง Firebase
+            const docRef = doc(db, "IoT2", roomId);
+            await setDoc(docRef, { [subId]: newValue }, { merge: true });
+        };
+
+        // ควบคุม Master Scene (เปิด/ปิดไฟทั้งหมดพร้อมกัน)
+        window.setAllLights = async function(value) {
+            if (navigator.vibrate) navigator.vibrate(100);
+            
+            const batch = writeBatch(db);
+            rooms.forEach(room => {
+                const docRef = doc(db, "IoT2", room.id);
+                batch.set(docRef, { led2: value }, { merge: true });
+            });
+            await batch.commit();
+        };
+
+    </script>
+</body>
+</html>
